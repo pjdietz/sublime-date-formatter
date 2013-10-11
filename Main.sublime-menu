@@ -15,14 +15,14 @@
                             {
                                 "caption": "Settings – Default",
                                 "args": {
-                                    "file": "${packages}/Date Formatter/MergeVariables.sublime-settings"
+                                    "file": "${packages}/Date Formatter/Date Formatter.sublime-settings"
                                 },
                                 "command": "open_file"
                             },
                             {
                                 "caption": "Settings – User",
                                 "args": {
-                                    "file": "${packages}/User/MergeVariables.sublime-settings"
+                                    "file": "${packages}/User/Date Formatter.sublime-settings"
                                 },
                                 "command": "open_file"
                             },

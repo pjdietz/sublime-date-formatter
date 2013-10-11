@@ -16,6 +16,6 @@
     ],
 
     // Path to the PHP interpretter. If PHP in installed on your system and is
-    // on the path, you probably will not need to change this.
+    // on the path, you should not need to change this.
     "php": "php"
 }

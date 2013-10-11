@@ -12,6 +12,24 @@ if int(sublime.version()) > 3000:
 else:
     PACKAGE_DIRECTORY = os.path.basename(os.getcwd())
 
+# Find the stirng class. (str for py3, basestring for py2)
+string_class = str
+try:
+    # If Python 2, use basestring instead of str
+    # noinspection PyStatementEffect
+    basestring
+    string_class = basestring
+except NameError:
+    pass
+
+
+def show_php_error():
+    message = "Unable to execute PHP script.\n\n" \
+              "Make sure PHP is installed properly on your system " \
+              "that the correct path to php is set in the settings " \
+              "for this package."
+    sublime.error_message(message)
+
 
 class FormatDateCommand(sublime_plugin.WindowCommand):
 
@@ -21,16 +39,16 @@ class FormatDateCommand(sublime_plugin.WindowCommand):
         self.formats = None
         self.settings = None
 
-    def run(self):
-        self.format = None
+    def run(self, format=None):
+        self.format = format
         self.settings = sublime.load_settings(SETTINGS_FILE)
 
         # Read the formats from settings. Normalize to [[format, description],]
         self.formats = self.settings.get("formats", [])
         for i in range(len(self.formats)):
             format = self.formats[i]
-            if isinstance(format, str):
-                self.formats[i] = [format,format]
+            if isinstance(format, string_class):
+                self.formats[i] = [format, format]
 
         self.format_dates()
 
@@ -46,22 +64,30 @@ class FormatDateCommand(sublime_plugin.WindowCommand):
         dates = []
         view = self.window.active_view()
         for region in view.sel():
-            dates.append(view.substr(region))
+            if region.empty():
+                dates.append("now")
+            else:
+                dates.append(view.substr(region))
 
         # Use the PHP script to generate a list of all the selected dates
         # formatted using the user's selected format.
         args = [
             self.settings.get("php"),
-            os.path.join(sublime.packages_path(), PACKAGE_DIRECTORY, 'format_dates.php'),
+            os.path.join(
+                sublime.packages_path(),
+                PACKAGE_DIRECTORY,
+                'format_dates.php'),
             self.format,
         ]
         args += dates
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        except OSError:
+            show_php_error()
+            return
         output = proc.communicate()[0]
-        returncode = proc.returncode
-
-        if (returncode != 0):
-            print("ERROR!")
+        if (proc.returncode != 0):
+            show_php_error()
             return
 
         # Update the selections with the formatted dates.
@@ -80,17 +106,21 @@ class FormatDateCommand(sublime_plugin.WindowCommand):
         # Use the PHP script to generate a list of all the user's formats.
         args = [
             self.settings.get("php"),
-            os.path.join(sublime.packages_path(), PACKAGE_DIRECTORY, 'format_date.php'),
+            os.path.join(
+                sublime.packages_path(),
+                PACKAGE_DIRECTORY,
+                'format_date.php'),
             source,
         ]
         args += [format[0] for format in self.formats]
-        print(args)
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        except OSError:
+            show_php_error()
+            return
         output = proc.communicate()[0]
-        returncode = proc.returncode
-
-        if (returncode != 0):
-            print("ERROR!")
+        if (proc.returncode != 0):
+            show_php_error()
             return
 
         # Display a list of the formats.
@@ -107,25 +137,11 @@ class FormatDateCommand(sublime_plugin.WindowCommand):
         self.format = self.formats[index][0]
         self.format_dates()
 
+
 class ReplaceDatesCommand(sublime_plugin.TextCommand):
+
     def run(self, edit, dates=None):
         regions = self.view.sel()
         if dates and len(dates) >= len(regions):
             for i in range(len(regions)):
                 self.view.replace(edit, regions[i], dates[i])
-
-
-"""
-2013-09-01
-9/1/2013
-10/08/2013
-yesterday
-tomorrow
-
-2013-09-01
-9/1/2013
-today
-yesterday
-tomorrow
-
-"""
