@@ -8,7 +8,9 @@ Select a date, choose a format, reformat.
 
 To use Date Formatter, **you must have PHP installed**.
 
-## Instalation
+## Installation
+
+First, make sure you have a PHP CLI interpretter installed.
 
 ### Sublime Package Control
 
